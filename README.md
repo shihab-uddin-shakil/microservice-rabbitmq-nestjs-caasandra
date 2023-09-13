@@ -52,4 +52,111 @@ npm install --save @nestjs/microservices amqplib nestjs-rabbitmq
 npm install cassandra-driver
 ```
 
+## Setup Docker
+**Step 1: Create Dockerfile**
 
+Create Dockerfile in every your microservice application
+
+```bash
+FROM node
+
+WORKDIR /usr/src/app
+
+COPY package*.json .
+
+RUN npm install
+
+COPY . .
+
+```
+
+**Step 2: Create docker-compose**
+
+Create  docker compos file in root application thats help to run all application
+
+```bash
+version: '3'
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    volumes:
+      - /var/lib/rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    networks:
+      - app-network
+    env_file:
+      - .env
+
+  auth:
+    build:
+      context: ./
+      dockerfile: ./apps/auth/Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+    volumes:
+      - .:/usr/src/app # any change to base folder should be reflected
+      - /usr/src/app/node_modules
+    networks:
+      - app-network
+    command: npm run start:dev auth # overrides CMD from dockerfile
+
+  api:
+    build:
+      context: ./
+      dockerfile: ./apps/api/Dockerfile
+    ports:
+      - '4000:5000'
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+      - auth
+    volumes:
+      - .:/usr/src/app # any change to base folder should be reflected
+      - /usr/src/app/node_modules
+    networks:
+      - app-network
+    command: npm run start:dev api
+
+ 
+#Docker Networks
+# docker network create app-network
+networks:
+  app-network:
+    driver: bridge
+    external: true
+#Volumes
+volumes:
+  dbdata:
+    driver: local
+
+
+```
+
+## Setup Env file
+
+Configure ``.env`` file in your root project
+
+
+```bash
+RABBITMQ_DEFAULT_USER=shihab < your rabitmq default user>
+RABBITMQ_DEFAULT_PASS= < your rabitmq default password>
+RABBITMQ_USER=shihab < your rabitmq user>
+RABBITMQ_PASS= < your rabitmq password >
+RABBITMQ_HOST=rabbitmq:5672
+
+RABBITMQ_AUTH_QUEUE=auth_queue < your rabitmq que name for auth app>
+
+SCYLLADB_HOST= <scylladb host>
+SCYLLADB_USER=<scylladb user>
+SCYLLADB_PASSWORD=<scylladb password>
+SCYLLADB_KEYSPACE=<scylladb key space name>
+SCYLLADB_DATACENTER=<scylladb data center>
+
+```
