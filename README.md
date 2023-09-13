@@ -160,3 +160,8 @@ SCYLLADB_KEYSPACE=<scylladb key space name>
 SCYLLADB_DATACENTER=<scylladb data center>
 
 ```
+## Run Application
+Run this application using comand
+```
+docker compose up
+```
